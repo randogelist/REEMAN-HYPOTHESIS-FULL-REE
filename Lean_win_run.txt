@@ -1,0 +1,60 @@
+# AWPI Phi/RH Lean — Rocq-matched v0.1.4
+
+## Platform
+
+Native Windows CMD. Do not use WSL for this package.
+
+Pinned versions:
+Lean 4.33.0
+Mathlib v4.33.0
+
+## Install
+
+Install Git for Windows and Elan/Lean using the official Lean Windows installation instructions.
+
+The included `lean-toolchain` pins Lean 4.33.0 automatically.
+
+## Run
+
+Extract the ZIP, open CMD inside the extracted folder, and run:
+
+call run_complete.cmd
+
+On the first run, Mathlib and its compiled cache are initialized.
+
+If Windows reports error 740 while fetching the Mathlib cache, open CMD as Administrator and run `call run_complete.cmd` once. Later runs can use ordinary CMD.
+
+## Proof target
+
+Forward:
+C -> RH
+
+Reverse:
+B /\ RH -> C
+
+Therefore under B:
+C <-> RH
+
+The Lean theorem spine is aligned with the corresponding Rocq PHIRH theorem chain.
+
+## Expected final status
+
+BUILD=PASS
+CORE=PASS
+FORWARD=PASS
+REVERSE=PASS
+SPLIT=PASS
+MAIN=PASS
+SORRY=NONE
+AXIOM=NONE
+STATUS=LEAN_ROCQ_MATCH_V0_1_4_PASS
+
+## Current abstraction boundary
+
+The old generic `Laws M` bundle has been removed.
+
+The remaining explicit upstream interfaces correspond to:
+Scale2Facts = Rocq PHIRH242 + PHIRH243
+NormalizedDyadicMultiplierFacts = Rocq PHIRH233
+
+The KQ tails are literal squares, so PHIRH270 and PHIRH271 are proved directly in Lean.

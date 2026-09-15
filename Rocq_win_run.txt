@@ -1,0 +1,305 @@
+AWPI Phi/RH Sieved Split v0.30.0
+WINDOWS ROCQ INSTALLATION, EXECUTION, AND OUTPUT-PARSING INSTRUCTIONS
+===================================================================
+
+PURPOSE
+-------
+This document describes how to install Rocq on Windows, run the unpacked
+AWPI Phi/RH sieved proof package from an arbitrary folder, and parse the
+terminal output deterministically.
+
+Target proof package:
+  awpi_phi_rh_sieved_split_v0_30_0
+
+Tested proof interface:
+  FORWARD:  source constructor -> RH
+  REVERSE:  background + RH -> source constructor
+
+The package is intended for Rocq 9.1.x on 64-bit Windows.
+
+Official Rocq installation page:
+  https://rocq-prover.org/install
+
+Official Rocq releases page:
+  https://rocq-prover.org/releases
+
+As of 2026-09-15, the official Rocq Platform 2026.07.0 uses Rocq 9.1.
+The Rocq project recommends the Rocq Platform binary installer for Windows.
+
+
+1. INSTALL ROCQ FROM WINDOWS / POWERSHELL
+------------------------------------------
+
+Open Windows PowerShell.
+
+Open the official Rocq installation page from PowerShell:
+
+  Start-Process "https://rocq-prover.org/install"
+
+On the Rocq installation page:
+
+  1. Select Windows.
+  2. Choose the Rocq Platform binary installer.
+  3. Install a Rocq 9.1.x Platform release.
+  4. Complete the Windows installer normally.
+
+The proof package was already successfully checked with a Rocq 9.1 Platform
+installation whose root followed the usual form:
+
+  C:\Rocq-Platform~9.1~2026.01
+
+A newer Rocq Platform 9.1 installation may have a different directory name.
+That is acceptable.
+
+
+2. LOCATE AND VERIFY ROCQ IN POWERSHELL
+----------------------------------------
+
+After installation, close and reopen PowerShell, then run:
+
+  $RocqRoot = Get-ChildItem -Path 'C:\' -Directory -Filter 'Rocq-Platform~9.1*' -ErrorAction SilentlyContinue |
+      Sort-Object LastWriteTime -Descending |
+      Select-Object -First 1
+
+  if (-not $RocqRoot) {
+      throw 'Rocq Platform 9.1 installation not found under C:\'
+  }
+
+  $RocqBin = Join-Path $RocqRoot.FullName 'bin'
+  $env:Path = "$RocqBin;$env:Path"
+
+  & (Join-Path $RocqBin 'rocq.exe') --version
+  & (Join-Path $RocqBin 'rocqchk.exe') --version
+
+Both commands must execute successfully.
+
+If Rocq was installed somewhere other than C:\Rocq-Platform~9.1..., set the
+path explicitly, for example:
+
+  $RocqBin = 'D:\Rocq\bin'
+  $env:Path = "$RocqBin;$env:Path"
+
+Then verify again:
+
+  & "$RocqBin\rocq.exe" --version
+  & "$RocqBin\rocqchk.exe" --version
+
+
+3. UNPACK THE PROOF PACKAGE
+---------------------------
+
+Unpack the ZIP anywhere on the machine.
+
+The absolute location is not important. Paths containing spaces or
+parentheses are allowed.
+
+Find the directory that directly contains these files:
+
+  RUN.cmd
+  run_complete.cmd
+  awpi_phi_rh_sieved_forward_v0_30_0.v
+  awpi_phi_rh_sieved_reverse_v0_30_0.v
+
+That directory is called PACKAGE_DIR below.
+
+Example only:
+
+  C:\Users\Alice\Desktop\Proofs\awpi_phi_rh_sieved_split_v0_30_0
+
+
+4. IMPORTANT DEPENDENCY PRECONDITION
+------------------------------------
+
+The v0.30.0 split package is relocatable, but the current RUN.cmd expects the
+already-built and previously kernel-checked dependency .vo spine to exist on
+the machine.
+
+The runner accepts the dependency files when they are in:
+
+  A. PACKAGE_DIR itself, or
+  B. %USERPROFILE%\Downloads, or
+  C. %USERPROFILE%\Desktop\git\RIMSTRUMENTALITY,
+
+and it also recursively searches B and C for the terminal v0.29 dependency.
+
+The required dependency spine includes at least:
+
+  awpi_phi_rh_normalized_dyadic_multiplier_v0_23_0.vo
+  awpi_phi_rh_actual_tail_remainder_adapter_v0_25_0.vo
+  awpi_phi_rh_pointwise_source_tail_constructor_v0_26_0.vo
+  awpi_phi_rh_pointwise_source_tail_reverse_v0_27_0.vo
+  awpi_phi_rh_pointwise_source_tail_background_closure_v0_28_2.vo
+  awpi_phi_rh_background_to_constructor_gap_v0_29_0.vo
+
+If those files are absent, RUN.cmd intentionally stops before compiling the
+v0.30.0 terminal modules and prints:
+
+  STATUS=PRECHECK_FAIL
+
+That means "dependency environment missing", not "proof rejected".
+
+
+5. RUN FROM CMD.EXE
+-------------------
+
+Open cmd.exe in PACKAGE_DIR and run exactly:
+
+  call RUN.cmd
+
+No cd command is required when cmd.exe is already open in PACKAGE_DIR.
+
+RUN.cmd changes to its own directory internally, so it is safe for package
+paths containing spaces or parentheses.
+
+
+6. RUN FROM POWERSHELL
+----------------------
+
+If PowerShell is already open, use the literal package path:
+
+  $PackageDir = 'C:\PATH\TO\awpi_phi_rh_sieved_split_v0_30_0'
+  Set-Location -LiteralPath $PackageDir
+  cmd.exe /d /c "call RUN.cmd"
+
+Do not remove the quotation marks around paths containing spaces.
+
+
+7. AUTOMATED POWERSHELL RUN + PARSER
+------------------------------------
+
+The following block runs the package, captures all output, echoes it to the
+screen, and then checks the required success markers.
+
+Replace only the value of $PackageDir.
+
+  $PackageDir = 'C:\PATH\TO\awpi_phi_rh_sieved_split_v0_30_0'
+
+  Set-Location -LiteralPath $PackageDir
+
+  $RunOutput = @(
+      cmd.exe /d /c "call RUN.cmd" 2>&1
+  )
+  $ExitCode = $LASTEXITCODE
+
+  $RunOutput | ForEach-Object { $_ }
+
+  $RequiredMarkers = @(
+      'BUILD_FORWARD=PASS',
+      'ROCQCHK_FORWARD=PASS',
+      'BUILD_REVERSE=PASS',
+      'ROCQCHK_REVERSE=PASS',
+      'BUILD=PASS',
+      'ROCQCHK=PASS',
+      'FORWARD=SOURCE_TO_RH',
+      'REVERSE=BACKGROUND_AND_RH_TO_CONSTRUCTOR',
+      'ADMITTED=NONE',
+      'STATUS=SIEVED_FORWARD_AND_GUARDED_REVERSE_KERNEL_CHECKED',
+      'RUN=PASS'
+  )
+
+  $Missing = @()
+  foreach ($Marker in $RequiredMarkers) {
+      if (-not ($RunOutput -contains $Marker)) {
+          $Missing += $Marker
+      }
+  }
+
+  if (($ExitCode -eq 0) -and ($Missing.Count -eq 0)) {
+      Write-Host 'PARSE=PASS'
+      exit 0
+  }
+
+  Write-Host 'PARSE=FAIL'
+  Write-Host "EXIT_CODE=$ExitCode"
+  foreach ($Marker in $Missing) {
+      Write-Host "MISSING_MARKER=$Marker"
+  }
+  exit 1
+
+
+8. SUCCESS CRITERION FOR A HUMAN OR AUTOMATED EVALUATOR
+--------------------------------------------------------
+
+Treat the complete run as successful only if:
+
+  process exit code = 0
+
+AND all of these exact lines are present:
+
+  BUILD_FORWARD=PASS
+  ROCQCHK_FORWARD=PASS
+  BUILD_REVERSE=PASS
+  ROCQCHK_REVERSE=PASS
+  BUILD=PASS
+  ROCQCHK=PASS
+  FORWARD=SOURCE_TO_RH
+  REVERSE=BACKGROUND_AND_RH_TO_CONSTRUCTOR
+  ADMITTED=NONE
+  STATUS=SIEVED_FORWARD_AND_GUARDED_REVERSE_KERNEL_CHECKED
+  RUN=PASS
+
+The PowerShell parser in section 7 prints:
+
+  PARSE=PASS
+
+only when these conditions hold.
+
+
+9. FAILURE CLASSIFICATION
+-------------------------
+
+A parser may classify failures by STATUS as follows:
+
+  STATUS=PRECHECK_FAIL
+    Missing source/dependency environment. The proof modules were not run.
+
+  STATUS=SETUP_FAIL
+    Package/dependency staging failed before proof compilation.
+
+  STATUS=FORWARD_BUILD_FAIL
+    Forward v0.30.0 module did not compile.
+
+  STATUS=FORWARD_KERNEL_CHECK_FAIL
+    Forward module compiled but rocqchk rejected the compiled module.
+
+  STATUS=REVERSE_BUILD_FAIL
+    Reverse v0.30.0 module did not compile.
+
+  STATUS=REVERSE_KERNEL_CHECK_FAIL
+    Reverse module compiled but rocqchk rejected the compiled module.
+
+  STATUS=SIEVED_FORWARD_AND_GUARDED_REVERSE_KERNEL_CHECKED
+    Both modules compiled and both passed rocqchk.
+
+The terminal line:
+
+  RUN=PASS
+
+is the package-level success marker.
+
+
+10. WHAT THE SUCCESSFUL RUN CERTIFIES
+-------------------------------------
+
+The terminal wrapper exposes two separately checked directions:
+
+  FORWARD:
+    source constructor -> RH
+
+  REVERSE:
+    background + RH -> source constructor
+
+The reverse direction is explicitly guarded by the background package.
+The runner does not claim an unconditional RH -> constructor theorem.
+
+The expected successful terminal summary is:
+
+  BUILD=PASS
+  ROCQCHK=PASS
+  FORWARD=SOURCE_TO_RH
+  REVERSE=BACKGROUND_AND_RH_TO_CONSTRUCTOR
+  ADMITTED=NONE
+  STATUS=SIEVED_FORWARD_AND_GUARDED_REVERSE_KERNEL_CHECKED
+  RUN=PASS
+
+END OF INSTRUCTIONS
